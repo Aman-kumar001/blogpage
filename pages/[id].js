@@ -1,6 +1,50 @@
-const Video = ({ video }) => {
+import { useState } from 'react';
+import YouTube from 'react-youtube';
+import styles from '../styles/video.module.css';
+const Video = ({ video, comments }) => {
 	console.log(video);
-	return <div className={'video'}>{video.items[0].snippet.title}</div>;
+	console.log(comments);
+
+	const [dsc, setDsc] = useState(false);
+	const opts = {
+		height: '390',
+		width: '640',
+		playerVars: {
+			// https://developers.google.com/youtube/player_parameters
+			autoplay: 1,
+		},
+	};
+	return (
+		<div className={styles.cont}>
+			<div className={styles.left}>
+				<div className={styles.player}>
+					<YouTube
+						videoId={`${video.items[0].id}`}
+						opts={opts}
+						className={styles.yt}
+					/>
+				</div>
+				<div className={styles.about}>
+					<p className={styles.title}>{video.items[0].snippet.title}</p>
+					{dsc && (
+						<div className={styles.desc}>
+							<p>{video.items[0].snippet.description}</p>
+						</div>
+					)}
+					<button
+						onClick={() => {
+							if (dsc) {
+								setDsc(false);
+							} else setDsc(true);
+						}}
+					>
+						{!dsc ? 'Read More' : 'Hide'}
+					</button>
+				</div>
+			</div>
+			<div className={styles.right}>comments here</div>
+		</div>
+	);
 };
 
 export default Video;
@@ -22,8 +66,13 @@ export const getStaticPaths = async () => {
 export const getStaticProps = async ({ params }) => {
 	const key = 'AIzaSyCfpiw7jgxpnLiUtKxzOiLYxYwzftWuPYY';
 	const res = await fetch(
-		`https://www.googleapis.com/youtube/v3/videos?id=${params.id}&key=${key}&fields=items(id,snippet(channelId,title,categoryId),statistics)&part=snippet,statistics`
+		`https://youtube.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails%2Cid&id=${params.id}&key=${key}`
 	);
 	const data = await res.json();
-	return { props: { video: data } };
+
+	const res2 = await fetch(
+		`https://www.googleapis.com/youtube/v3/commentThreads?key=${key}&textFormat=plainText&part=snippet&videoId=${params.id}&maxResults=50 `
+	);
+	const data2 = await res2.json();
+	return { props: { video: data, comments: data2 } };
 };
